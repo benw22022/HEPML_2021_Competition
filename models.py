@@ -53,13 +53,11 @@ def bayes_net(num_samples, lr=0.01):
 
 def net():
 	initializer = tf.keras.initializers.HeNormal()
-	kernel_regularizer = None # tf.keras.regularizers.l1_l2(l1=0.001, l2=0.001)
-
-
+	kernel_regularizer = tf.keras.regularizers.l1_l2(l1=0.01, l2=0.01)
 
 	data_augmentation = tf.keras.Sequential([
-		tf.keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-		tf.keras.layers.experimental.preprocessing.RandomRotation(0.2),
+		# tf.keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
+		# tf.keras.layers.experimental.preprocessing.RandomRotation(0.2),
 		tf.keras.layers.experimental.preprocessing.CenterCrop(120, 120),
 		tf.keras.layers.experimental.preprocessing.Rescaling(1. / 100)
 	])
@@ -69,29 +67,38 @@ def net():
 	input = tf.keras.layers. Input(shape=(576, 576, 1))
 	x = data_augmentation(input)
 
-	x = tf.keras.layers.Conv2D(16, 5, strides=(4, 4), activation='elu', kernel_initializer=initializer, padding="same", kernel_regularizer=kernel_regularizer)(x)
-	x = tf.keras.layers.MaxPooling2D(pool_size=(4, 4))(x)
-	x = tf.keras.layers.Conv2D(32, 3, strides=(1, 1), activation='elu', kernel_initializer=initializer, padding="same", kernel_regularizer=kernel_regularizer)(x)
-	x = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+	x = tf.keras.layers.Conv2D(4, 5, activation='elu', kernel_initializer=initializer, padding="same",
+							   kernel_regularizer=kernel_regularizer)(x)
+	x = tf.keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
+
+	# x = tf.keras.layers.Conv2D(16, 3, activation='elu', kernel_initializer=initializer, padding="same",
+	# 						   kernel_regularizer=kernel_regularizer)(x)
+	# x = tf.keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
+
+	# x = tf.keras.layers.Conv2D(16, 3, strides=(2, 2), activation='elu', kernel_initializer=initializer, padding="same", kernel_regularizer=kernel_regularizer)(x)
+	# x = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
+	# x = tf.keras.layers.Conv2D(32, 3, strides=(1, 1), activation='elu', kernel_initializer=initializer, padding="same", kernel_regularizer=kernel_regularizer)(x)
+	# x = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
 
 	# x = inception_module(x, 16, 32, 64, 4, 8, 8)
 	# x = tf.keras.layers.BatchNormalization()(x)
 	# x = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(x)
 	# x = inception_module(x, 16*2, 32*2, 64*2, 4*2, 8*2, 8*2)
 
-	# x = tf.keras.layers.BatchNormalization()(x)
+	x = tf.keras.layers.BatchNormalization()(x)
 	# x = tf.keras.layers.MaxPooling2D(pool_size=(3, 3))(x)
 	x = tf.keras.layers.Flatten()(x)
 	# x = tf.keras.layers.Dropout(0.5)(x)
-	x = tf.keras.layers.Dense(3600, activation='elu', kernel_initializer=initializer, kernel_regularizer=kernel_regularizer)(x)
-	x = tf.keras.layers.Dense(500, activation='elu', kernel_initializer=initializer, kernel_regularizer=kernel_regularizer)(x)
-	x = tf.keras.layers.Dense(500, activation='elu', kernel_initializer=initializer, kernel_regularizer=kernel_regularizer)(x)
-
-	# x = tf.keras.layers.Dense(50, activation='elu', kernel_initializer=initializer)(x)
+	# x = tf.keras.layers.Dense(4000, activation='elu', kernel_initializer=initializer,  kernel_regularizer=kernel_regularizer)(x)
+	# x = tf.keras.layers.Dropout(0.5)(x)
+	# x = tf.keras.layers.Dense(6000, activation='elu', kernel_initializer=initializer, kernel_regularizer=kernel_regularizer )(x)
+	# # x = tf.keras.layers.Dense(500, activation='elu', kernel_initializer=initializer, kernel_regularizer=kernel_regularizer)(x)
+	# x = tf.keras.layers.BatchNormalization()(x)
+	x = tf.keras.layers.Dense(100, activation='elu', kernel_initializer=initializer, kernel_regularizer=kernel_regularizer)(x)
 		#x = tf.keras.layers.Dense(500, activation='relu', kernel_initializer=initializer, kernel_regularizer='l1_l2')(x)
 	# x = tf.keras.layers.Dropout(0.5)(x)
-	# x = tf.keras.layers.BatchNormalization()(x)
-	x = tf.keras.layers.Dense(1)(x)
+	x = tf.keras.layers.BatchNormalization()(x)
+	x = tf.keras.layers.Dense(1, activation='relu')(x)
 
 	return tf.keras.Model(inputs=input, outputs=x)
 

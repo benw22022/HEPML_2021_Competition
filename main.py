@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 import pandas as pd
 import tqdm
-from models import net
+from models import net, bayes_net
 import numpy as np
 from collections import Counter
 
@@ -22,6 +22,28 @@ if len(physical_devices) > 0:
 	tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 tfd = tfp.distributions
+
+
+def my_mae(y_true, y_pred):
+
+	y_true = tf.cast(y_true, 'float32')
+	y_pred = tf.cast(y_pred, 'float32')
+	length = tf.cast(len(y_pred), 'float32')
+	mae = tf.math.reduce_sum(tf.abs(y_true - y_pred)) / length
+	return mae
+
+	# mae = tf.constant(0.0)
+	#
+	# for i in range(len(y_true)):
+	# 	# print(f"truth -- {true_test_energies[i]} -- predicted -- {predicted_test_energies[i]}")
+	# 	# if i > 100:
+	# 	# 	break
+	# 	mae += tf.abs(y_true[i] - y_pred[i])
+	#
+	# mae /= len(y_true)
+	#
+	# return mae
+
 
 
 # custom callback for multi-gpu model saving
@@ -123,7 +145,7 @@ if __name__ == "__main__":
 	for image, label in images_ds.take(2):
 		show(image, label)
 
-	batch_size = 128
+	batch_size = 256
 	image_size = (576, 576)
 
 	full_dataset = make_ds("data\\train\\*png")
@@ -152,14 +174,16 @@ if __name__ == "__main__":
 											   monitor="val_loss", save_best_only=True, save_weights_only=True,
 											   verbose=0)
 
-	reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.05, patience=30, min_lr=4e-6)
+	reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=4e-6)
 
 	callbacks = [early_stopping, model_checkpoint, reduce_lr]
 
 	# train model
-	# model.layers[-1].bias.assign([0])
-	optimizer = tf.keras.optimizers.Adamax(learning_rate=0.005)
-	model.compile(optimizer=optimizer, loss="MAE")
+	model.layers[-1].bias.assign([np.mean(train_energies)])
+	#model.layers[-1].bias.assign([15])
+	optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+	loss = 'MSE' #'mean_squared_logarithmic_error'#my_mae #tf.keras.losses.MeanAbsolutePercentageError(reduction=tf.keras.losses.Reduction.NONE) # tf.keras.losses.MeanAbsoluteError(reduction=tf.keras.losses.Reduction.SUM)
+	model.compile(optimizer=optimizer, loss=loss)
 	history = model.fit(train_dataset, validation_data=val_dataset, epochs=500, callbacks=callbacks)
 
 	# Plot training history
@@ -176,6 +200,9 @@ if __name__ == "__main__":
 
 	test_loss = model.evaluate(test_dataset)
 	print(f"Testing dataset MAE: {np.average(test_loss)}")
+
+	print(f"Testing dataset MAE: {np.average(test_loss)}")
+
 
 	true_test_energies = np.concatenate([y for x, y in test_dataset], axis=0)
 
@@ -205,7 +232,7 @@ if __name__ == "__main__":
 	unseen_dataset = make_ds("data\\test\\*.png").batch(batch_size)
 	predicted_energies = model.predict(unseen_dataset)
 
-	files = [img.split("\\")[-1] for img in glob.glob("data\\test\\*.png")]
+	files = [os.path.basename(img) for img in glob.glob("data\\test\\*.png")]
 
 	regression_dict = {"id": files, "energy": predicted_energies.ravel()}
 	regression_df = pd.DataFrame.from_dict(regression_dict)
