@@ -182,7 +182,7 @@ if __name__ == "__main__":
 	model.layers[-1].bias.assign([np.mean(train_energies)])
 	#model.layers[-1].bias.assign([15])
 	optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-	loss = 'MSE' #'mean_squared_logarithmic_error'#my_mae #tf.keras.losses.MeanAbsolutePercentageError(reduction=tf.keras.losses.Reduction.NONE) # tf.keras.losses.MeanAbsoluteError(reduction=tf.keras.losses.Reduction.SUM)
+	loss = tf.keras.losses.MeanAbsoluteError()
 	model.compile(optimizer=optimizer, loss=loss)
 	history = model.fit(train_dataset, validation_data=val_dataset, epochs=500, callbacks=callbacks)
 
